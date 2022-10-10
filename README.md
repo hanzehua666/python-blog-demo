@@ -1,3 +1,3 @@
 # python-blog-demo
 
-A python webapp demo.
+A python webapp demo
