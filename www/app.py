@@ -12,11 +12,10 @@ def index(request):
     return web.Response(body=b'<h1>Awesome</h1>', content_type='text/html')
 
 
-@asyncio.coroutine
-def init(loop):
+async def init(loop):
     app = web.Application(loop=loop)
     app.router.add_route('GET', '/', index)
-    srv = yield from loop.create_server(app.make_handler(), '127.0.0.1', 9988)
+    srv = await loop.create_server(app.make_handler(), '127.0.0.1', 9988)
     logging.info('server started at http://127.0.0.1:9988...')
     return srv
 
