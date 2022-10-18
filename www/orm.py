@@ -1,10 +1,11 @@
 import asyncio
 import logging
+
 import aiomysql
 
 
 def log(sql, args=()):
-    logging.info('SQL: %S' % sql)
+    logging.info('SQL: %s' % sql)
 
 
 async def create_pool(loop, **kw):
@@ -64,6 +65,7 @@ def create_args_string(num):
 
 
 class Field(object):
+
     def __init__(self, name, column_type, primary_key, default):
         self.name = name
         self.column_type = column_type
@@ -71,35 +73,41 @@ class Field(object):
         self.default = default
 
     def __str__(self):
-        return '<%s, %s:%s>' % (self.__class_.__name__, self.column_type, self.name)
+        return '<%s, %s:%s>' % (self.__class__.__name__, self.column_type, self.name)
 
 
 class StringField(Field):
+
     def __init__(self, name=None, primary_key=False, default=None, ddl='varchar(100)'):
         super().__init__(name, ddl, primary_key, default)
 
 
 class BooleanField(Field):
+
     def __init__(self, name=None, default=False):
         super().__init__(name, 'boolean', False, default)
 
 
 class IntegerField(Field):
+
     def __init__(self, name=None, primary_key=False, default=0):
         super().__init__(name, 'bigint', primary_key, default)
 
 
 class FloatField(Field):
+
     def __init__(self, name=None, primary_key=False, default=0.0):
         super().__init__(name, 'real', primary_key, default)
 
 
 class TextField(Field):
+
     def __init__(self, name=None, default=None):
         super().__init__(name, 'text', False, default)
 
 
 class ModelMetaclass(type):
+
     def __new__(cls, name, bases, attrs):
         if name == 'Model':
             return type.__new__(cls, name, bases, attrs)
@@ -110,10 +118,10 @@ class ModelMetaclass(type):
         primaryKey = None
         for k, v in attrs.items():
             if isinstance(v, Field):
-                logging.info(' found mapping: %s ==> %s' % (k, v))
+                logging.info('  found mapping: %s ==> %s' % (k, v))
                 mappings[k] = v
                 if v.primary_key:
-                    # 找到主键
+                    # 找到主键:
                     if primaryKey:
                         raise Exception(
                             'Duplicate primary key for field: %s' % k)
@@ -124,7 +132,7 @@ class ModelMetaclass(type):
             raise Exception('Primary key not found.')
         for k in mappings.keys():
             attrs.pop(k)
-        escaped_fields = list(map(lambda f: '%s' % f, fields))
+        escaped_fields = list(map(lambda f: '`%s`' % f, fields))
         attrs['__mappings__'] = mappings  # 保存属性和列的映射关系
         attrs['__table__'] = tableName
         attrs['__primary_key__'] = primaryKey  # 主键属性名
@@ -141,6 +149,7 @@ class ModelMetaclass(type):
 
 
 class Model(dict, metaclass=ModelMetaclass):
+
     def __init__(self, **kw):
         super(Model, self).__init__(**kw)
 
@@ -159,7 +168,7 @@ class Model(dict, metaclass=ModelMetaclass):
     def getValueOrDefault(self, key):
         value = getattr(self, key, None)
         if value is None:
-            field = self._mappings__[key]
+            field = self.__mappings__[key]
             if field.default is not None:
                 value = field.default() if callable(field.default) else field.default
                 logging.debug('using default value for %s: %s' %
@@ -233,4 +242,5 @@ class Model(dict, metaclass=ModelMetaclass):
         args = [self.getValue(self.__primary_key__)]
         rows = await execute(self.__delete__, args)
         if rows != 1:
-            logging.warn('failed to remove by primary key: affected rows: %s' % rows)
+            logging.warn(
+                'failed to remove by primary key: affected rows: %s' % rows)
